@@ -1,0 +1,28 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependency directory
+node_modules
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# dist folder
+/dist
+
+# Bamboo Artifacts
+eslint.json
+jest.json
+coverage.json
+
+/templates/dev.ejs
+.DS_Store
+.npmrc
+
+.idea/
+.vscode/
