@@ -1,52 +1,58 @@
-import { Meta, StoryObj } from "@storybook/react";
-import React from "react";
-import { styled } from "styled-components";
-import { generateRandomColors } from "../../utils/colorGenerate";
-import Carousel from "./Carousel";
+/** @jsxImportSource @emotion/react */
+import { FC } from 'react'
+import styled from '@emotion/styled'
+import { Meta, StoryObj } from '@storybook/react'
+import Carousel, { CarouselProps } from './Carousel'
+import { mockedItems } from './mocked-data'
+import { JSX } from '@emotion/react/jsx-runtime'
 
 export default {
-  title: "Carousel",
   component: Carousel,
-} as Meta;
+  title: 'Carousel',
+} as Meta
 
-const AbsoluteBlock = styled.div`
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  text-wrap: nowrap;
-  font-size: 32px;
-  background-color: rgba(0, 0, 0, 0.3);
-  color: white;
-`;
-const SlideBlock = styled.div`
-  position: relative;
+type Story = StoryObj<typeof Carousel>
+
+interface SliderItemProps {
+  children: React.ReactNode
+}
+
+const Item = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 600px;
-  max-height: 600px;
-`;
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  font-size: 3.2rem;
+  cursor: -webkit-grab;
+  cursor: grab;
+  min-height: 200px;
+`
 
-type Story = StoryObj<typeof Carousel>;
+const SliderItem: FC<SliderItemProps> = ({ children, ...rest }) => {
+  return <Item {...rest}>{children}</Item>
+}
 
-export const ImgsCarousel: Story = {
-  render: (props) => {
-    const temp = { ...Default.args, ...props };
-    const colors: string[] = generateRandomColors(12);
+export const Default: Story = (args: JSX.IntrinsicAttributes & CarouselProps) => {
+  return (
+    <Carousel {...args}>
+      {mockedItems.map(({ id, label, ...rest }) => (
+        <SliderItem {...rest} key={id}>
+          {label}
+        </SliderItem>
+      ))}
+    </Carousel>
+  )
+}
 
-    return (
-      <Carousel {...temp}>
-        {colors.map((color, i) => (
-          <SlideBlock style={{ background: color }} key={i}>
-            <AbsoluteBlock>Title {i + 1}</AbsoluteBlock>
-          </SlideBlock>
-        ))}
-      </Carousel>
-    );
-  },
-};
-
-export const Default = ImgsCarousel;
 Default.args = {
+  hasNavigation: true,
+}
+
+export const MultipleItems = Default
+MultipleItems.args = {
+  ...Default.args,
+  itemsPerSlide: 3,
   isInfinite: true,
-};
+}

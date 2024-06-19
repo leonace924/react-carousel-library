@@ -1,19 +1,10 @@
-import styled from 'styled-components';
+import styled from '@emotion/styled'
 
 export const CarouselContainer = styled.div`
   position: relative;
   overflow: hidden;
   width: 100%;
-`;
-
-export const CarouselTrack = styled.div<{visibleItems: number}>`
-  display: flex;
-  transition: transform 0.3s ease-in-out;
-`;
-
-export const CarouselItem = styled.div<{visibleItems: number}>`
-  flex: 0 0 ${({ visibleItems }: { visibleItems: number }) => 100 / visibleItems}%;
-`;
+`
 
 export const CarouselButton = styled.button`
   position: absolute;
@@ -25,12 +16,14 @@ export const CarouselButton = styled.button`
   border: none;
   cursor: pointer;
   z-index: 1;
-`;
+`
 
 export const PrevButton = styled(CarouselButton)`
   left: 10px;
-`;
+`
 
 export const NextButton = styled(CarouselButton)`
   right: 10px;
-`;
+`
+
+export const Div = styled.div``
