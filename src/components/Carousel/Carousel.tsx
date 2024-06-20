@@ -22,6 +22,7 @@ import {
 
 export interface CarouselProps {
   children: ReactNode
+  gutter?: number
   isInfinite?: boolean
   hasNavigation?: boolean
   draggingSlideTreshold?: number
@@ -86,53 +87,53 @@ const Carousel: React.FC<CarouselProps> = ({
       : carouselItem.getBoundingClientRect().height
   }, [carouselSlideAxis])
 
-  const adjustCarouselWrapperPosition = useCallback(
-    (ref: HTMLDivElement) => {
-      const positionProperty =
-        carouselSlideAxis === 'x' ? 'left' : 'top'
-      const getDefaultPositionValue = () =>
-        getSlideValue() * childArray.length
-      const setPosition = (v: number) => {
-        ref.style.top = '0px'
-        ref.style.left = '0px'
-        ref.style[positionProperty] = `-${v}px`
-      }
-      const setStartPosition = () =>
-        setPosition(getDefaultPositionValue())
-      const setCenterPosition = () =>
-        setPosition(
-          getDefaultPositionValue() -
-            getSlideValue() * Math.round((itemsPerSlide - 1) / 2),
-        )
-      const setEndPosition = () =>
-        setPosition(
-          getDefaultPositionValue() -
-            getSlideValue() * Math.round(itemsPerSlide - 1),
-        )
+  const adjustCarouselWrapperPosition = (
+    ref: HTMLDivElement,
+    _initialActiveItem?: number,
+  ) => {
+    const positionProperty =
+      carouselSlideAxis === 'x' ? 'left' : 'top'
 
-      if (itemsPerSlide > 1) {
-        switch (initialStartingPosition) {
-          case 'center':
-            setCenterPosition()
-            break
-          case 'end':
-            setEndPosition()
-            break
-          default:
-            setStartPosition()
-        }
+    const getDefaultPositionValue = () =>
+      getSlideValue() * childArray.length
+
+    const setPosition = (v: number) => {
+      if (isInfinite) {
+        ref.style.top = '0px'
+        ref.style[positionProperty] = `-${v}px`
       } else {
-        setStartPosition()
+        ref.style.left = '0px'
+        ref.style.top = '0px'
+        if (_initialActiveItem) {
+          ref.style[positionProperty] =
+            `calc(-${_initialActiveItem} * 100%)`
+        }
       }
-    },
-    [
-      carouselSlideAxis,
-      getSlideValue,
-      initialStartingPosition,
-      childArray.length,
-      itemsPerSlide,
-    ],
-  )
+    }
+
+    const setStartPosition = () =>
+      setPosition(getDefaultPositionValue())
+
+    setStartPosition()
+  }
+
+  function getInitialStyles() {
+    const totalValue = (childArray.length / itemsPerSlide) * 100
+    const singleItemValue = 100 / itemsPerSlide
+    const cssProp = carouselSlideAxis === 'x' ? 'left' : 'y'
+    const quantityToMove = Math.floor(50 / singleItemValue)
+
+    return {
+      [cssProp]: `calc(-${totalValue}% + ${singleItemValue * quantityToMove}%)`,
+    }
+  }
+
+  const handleCarouselFragmentRef = (ref: HTMLDivElement | null) => {
+    if (ref) {
+      carouselTrackWrapperRef.current = ref
+      adjustCarouselWrapperPosition(ref, activeItem.current)
+    }
+  }
 
   const handleResize = useCallback(() => {
     if (window.innerWidth === currentWindowWidth.current) {
@@ -171,7 +172,7 @@ const Carousel: React.FC<CarouselProps> = ({
   }, [handleResize, shouldResizeOnWindowResize])
 
   useEffect(() => {
-    if (carouselTrackWrapperRef.current) {
+    if (!isInfinite && carouselTrackWrapperRef.current) {
       carouselTrackWrapperRef.current.style.top = '0px'
       carouselTrackWrapperRef.current.style.left = '0px'
     }
@@ -366,6 +367,7 @@ const Carousel: React.FC<CarouselProps> = ({
       })
     } else {
       const toIndex =
+        !isInfinite &&
         getCurrentActiveItem() - Math.ceil(velocity / 4) <= 0
           ? 0
           : getCurrentActiveItem() - Math.ceil(velocity / 4)
@@ -377,7 +379,8 @@ const Carousel: React.FC<CarouselProps> = ({
   const slideToNextItem = () => {
     if (
       (!isInfinite &&
-        getCurrentActiveItem() === internalChildren.length - 1) ||
+        getCurrentActiveItem() ===
+          internalChildren.length - itemsPerSlide) ||
       windowIsHidden.current ||
       lastItemReached.current
     )
@@ -399,7 +402,8 @@ const Carousel: React.FC<CarouselProps> = ({
   const slideToNextDirection = (velocity: number) => {
     if (
       (!isInfinite &&
-        getCurrentActiveItem() === internalChildren.length - 1) ||
+        getCurrentActiveItem() ===
+          internalChildren.length - itemsPerSlide) ||
       windowIsHidden.current ||
       lastItemReached.current
     )
@@ -415,8 +419,9 @@ const Carousel: React.FC<CarouselProps> = ({
       })
     } else {
       const toIndex =
+        !isInfinite &&
         getCurrentActiveItem() + Math.ceil(velocity / 4) >=
-        childArray.length - itemsPerSlide
+          childArray.length - itemsPerSlide
           ? childArray.length - itemsPerSlide
           : getCurrentActiveItem() + Math.ceil(velocity / 4)
 
@@ -450,15 +455,9 @@ const Carousel: React.FC<CarouselProps> = ({
             flexDirection:
               carouselSlideAxis === 'x' ? 'row' : 'column',
             ...carouselStyles,
+            ...getInitialStyles(),
           }}
-          ref={ref => {
-            if (ref) {
-              carouselTrackWrapperRef.current = ref
-              if (isInfinite) {
-                adjustCarouselWrapperPosition(ref)
-              }
-            }
-          }}
+          ref={handleCarouselFragmentRef}
         >
           {internalChildren.map((child, index) => (
             <CarouselItem
