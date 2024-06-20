@@ -5,11 +5,7 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react'
-import {
-  useSpring,
-  config,
-  AnimationResult,
-} from '@react-spring/web'
+import { useSpring, config, AnimationResult } from '@react-spring/web'
 import { useDrag } from '@use-gesture/react'
 import { useCustomEventsModule } from '../modules'
 import { SlideToItemFnProps, SlideActionType } from './types'
@@ -243,7 +239,8 @@ const Carousel: React.FC<CarouselProps> = ({
 
       if (isDragging) {
         setCarouselStyles.start({
-          [carouselSlideAxis]: currentSlidedValue + movement,
+          [carouselSlideAxis]:
+            currentSlidedValue + movement * props.velocity[0],
         })
 
         emitObservable({
@@ -258,14 +255,14 @@ const Carousel: React.FC<CarouselProps> = ({
           if (!isInfinite && getIsLastItem()) {
             resetAnimation()
           } else {
-            slideToNextItem()
+            slideToNextDirection(props.velocity[0])
           }
           props.cancel()
         } else if (prevItemTreshold) {
           if (!isInfinite && getIsFirstItem()) {
             resetAnimation()
           } else {
-            slideToPrevItem()
+            slideToPrevDirection(props.velocity[0])
           }
           props.cancel()
         }
@@ -349,6 +346,34 @@ const Carousel: React.FC<CarouselProps> = ({
     }
   }
 
+  const slideToPrevDirection = (velocity: number) => {
+    if (
+      (!isInfinite && getCurrentActiveItem() === 0) ||
+      windowIsHidden.current
+    )
+      return
+
+    slideActionType.current = 'prev'
+    if (getIsFirstItem()) {
+      slideToItem({
+        from: -(
+          Math.abs(
+            getWrapperFromValue(carouselTrackWrapperRef.current!),
+          ) +
+          getSlideValue() * childArray.length
+        ),
+        to: childArray.length - 1,
+      })
+    } else {
+      const toIndex =
+        getCurrentActiveItem() - Math.ceil(velocity / 4) <= 0
+          ? 0
+          : getCurrentActiveItem() - Math.ceil(velocity / 4)
+
+      slideToItem({ to: toIndex })
+    }
+  }
+
   const slideToNextItem = () => {
     if (
       (!isInfinite &&
@@ -368,6 +393,34 @@ const Carousel: React.FC<CarouselProps> = ({
       })
     } else {
       slideToItem({ to: getCurrentActiveItem() + 1 })
+    }
+  }
+
+  const slideToNextDirection = (velocity: number) => {
+    if (
+      (!isInfinite &&
+        getCurrentActiveItem() === internalChildren.length - 1) ||
+      windowIsHidden.current ||
+      lastItemReached.current
+    )
+      return
+
+    slideActionType.current = 'next'
+    if (getIsLastItem()) {
+      slideToItem({
+        from:
+          getWrapperFromValue(carouselTrackWrapperRef.current!) +
+          getSlideValue() * childArray.length,
+        to: 0,
+      })
+    } else {
+      const toIndex =
+        getCurrentActiveItem() + Math.ceil(velocity / 4) >=
+        childArray.length - itemsPerSlide
+          ? childArray.length - itemsPerSlide
+          : getCurrentActiveItem() + Math.ceil(velocity / 4)
+
+      slideToItem({ to: toIndex })
     }
   }
 
